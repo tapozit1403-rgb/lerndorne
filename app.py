@@ -20,8 +20,7 @@ def convert_units(value, conversion_type):
     """מחשבון המרות תעופתי"""
     conversions = {
      "מייל לק'מ": value * 1.609,
-        "מטר לשנייה לקמ"ש": value * 3.6,
-        "רגל למטר": value * 0.3048
+"מטר לשנייה לקמ\"ש": value * 3.6,        "רגל למטר": value * 0.3048
     }
     return round(conversions.get(conversion_type, 0), 2)
 
