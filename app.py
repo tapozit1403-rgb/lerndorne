@@ -70,8 +70,7 @@ def main():
         st.header("מחשבון המרות מהיר")
         col_input, col_conv = st.columns(2)
         val = col_input.number_input("ערך להמרה:", value=1.0)
-        ctype = col_conv.selectbox("סוג המרה:", ["מייל לק"מ", "מטר לשנייה לקמ"ש", "רגל למטר"])
-        result = convert_units(val, ctype)
+ctype = col_conv.selectbox('המרה:', ["מייל לק\"מ", "מטר לשנייה לקמ\"ש", "רגל למטר"])        result = convert_units(val, ctype)
         st.metric(f"תוצאה ({ctype.split(' ')[-1]})", result)
 
 if __name__ == "__main__":
