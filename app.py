@@ -19,7 +19,7 @@ def calculate_cg(weights, arms):
 def convert_units(value, conversion_type):
     """מחשבון המרות תעופתי"""
     conversions = {
-        "מייל לק"מ": value * 1.609,
+     "מייל לק'מ": value * 1.609,
         "מטר לשנייה לקמ"ש": value * 3.6,
         "רגל למטר": value * 0.3048
     }
