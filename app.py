@@ -70,6 +70,11 @@ def main():
         st.header("מחשבון המרות מהיר")
         col_input, col_conv = st.columns(2)
         val = col_input.number_input("ערך להמרה:", value=1.0)
+# יצירת העמודות - זה החלק שחסר לך כנראה
+col_title, col_conv = st.columns([2, 1]) 
+
+# עכשיו השורה הזו תעבוד כי col_conv כבר קיים
+ctype = col_conv.selectbox("המרה:", ["מייל לקמ", "מטר לשניה לקמש", "רגל למטר"])
 ctype = col_conv.selectbox("המרה:", ["מייל לקמ", "מטר לשניה לקמש", "רגל למטר"])
 result = convert_units(val, ctype)
 
