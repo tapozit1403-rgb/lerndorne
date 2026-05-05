@@ -1,92 +1,99 @@
 import streamlit as st
 
-# --- פונקציות עזר (Business Logic) ---
+# --- פונקציות ליבה על בסיס נתוני המצגת והרגולציה ---
 
-def calculate_safety_distance(target_type):
-    """מחזיר את מרחק ההפרדה הנדרש לפי תקנות רת"א"""
-    distances = {
-        "אדם בודד / מבנה / רכב": 50,
-        "התקהלות בני אדם (מעל 30 איש)": 250,
-        "שדה תעופה אזרחי": 2000
+def get_regulation_data(category):
+    """נתונים רשמיים מתוך חוקת הטיס ונהלי רת"א"""
+    data = {
+        "מרחקי הפרדה": {
+            "אדם / מבנה / רכב / כביש": "50 מטר",
+            "התקהלות בני אדם (מעל 30 איש)": "250 מטר [הנחיית רת\"א מעודכנת]", # על פי תיקון המשתמש
+            "גבול שדה תעופה / מנחת": "2 קילומטר (כפוף לאישור CTR)",
+            "גובה טיסה מקסימלי": "120 מטר (400 רגל) מעל פני השטח (AGL)"
+        },
+        "טכני וסוללות": {
+            "מתח תא נומינלי": "3.7V",
+            "מתח טעינה מקסימלי": "4.2V",
+            "מתח פריקה מינימלי (בטיחות)": "3.5V",
+            "מתח אחסון (Storage)": "3.8V - 3.85V"
+        }
     }
-    return distances.get(target_type, 50)
+    return data.get(category, {})
 
-def calculate_drone_performance(base_mtow, current_temp):
-    """חישוב משקל המראה בטוח בהתאם לרום צפיפות (טמפרטורה)"""
-    standard_temp = 15
-    if current_temp <= standard_temp:
-        return base_mtow
-    # איבוד של 0.3% לכל מעלה מעל 15 מעלות צלזיוס
-    loss_factor = 0.003
-    temp_diff = current_temp - standard_temp
-    recommended_mtow = base_mtow * (1 - (temp_diff * loss_factor))
-    return round(recommended_mtow, 2)
-
-def troubleshoot_drone(issue):
-    """מערכת מומחה לדיאגנוסטיקה של תקלות בכטב"ם"""
-    knowledge_base = {
-        "רעידות חריגות": "בדוק איזון פרופלורים, הידוק מנועים לשלדה, וודא שאין סדקים בזרועות.",
-        "סטייה מהנתיב (Drift)": "בצע כיול מצפן (Compass) הרחק ממקורות מתכת, ובדוק קליטת לוויינים.",
-        "התחממות סוללה": "בדוק אם המשקל (MTOW) חורג מהמותר לטמפרטורה, או אם הסוללה ישנה.",
-        "רעש שריקה מהמנועים": "בדוק חדירת גופים זרים למנוע או שחיקה של המיסבים (Bearings).",
-        "ניתוקי וידאו": "בדוק תקינות אנטנות (Downlink) וודא שאין חסימה בקו הראייה (VLOS)."
-    }
-    return knowledge_base.get(issue, "תקלה לא מוכרת. מומלץ לנחות ולבצע בדיקה מקיפה.")
+def calculate_density_altitude_impact(temp, mtow):
+    """חישוב השפעת רום צפיפות על ביצועי המראה (מטאורולוגיה)"""
+    # סטנדרט ISA הוא 15 מעלות. בישראל הטמפרטורה לרוב גבוהה יותר.
+    if temp <= 15:
+        return mtow, 0
+    
+    # כלל אצבע: ירידה של כ-0.3% בביצועים על כל מעלה מעל הסטנדרט
+    penalty_factor = (temp - 15) * 0.003
+    safe_weight = mtow * (1 - penalty_factor)
+    return round(safe_weight, 2), round(penalty_factor * 100, 1)
 
 # --- ממשק המשתמש (Streamlit UI) ---
 
 def main():
-    st.set_page_config(page_title="Drone AI Expert Pro", page_icon="🚁", layout="wide")
+    st.set_page_config(page_title="Drone AI Expert - Exam Ready", page_icon="🎓", layout="wide")
     
-    st.title("🚁 Drone AI Expert - Pro Edition (Up to 25kg)")
-    st.markdown("---")
+    st.title("🚁 Drone AI Expert Pro - הכנה למבחן רת\"א (עד 25 ק\"ג)")
+    st.write("מערכת עזר המבוססת על נתוני המצגת וסימולציות המבחן")
+    st.divider()
 
-    # סרגל צדדי - Checklist
-    st.sidebar.header("✅ בדיקות לפני המראה")
-    steps = [
-        "בדיקת שלדה וברגים", "פרופלורים תקינים", 
-        "סוללות נעולות", "נעילת GPS (10+)", 
-        "מרחקי הפרדה (50/250מ')", "שטח המראה פנוי"
+    # סרגל צד - בדיקות חובה (Checklist) לפי סע"מ
+    st.sidebar.header("📋 רשימת תיוג לפני המראה")
+    safety_checks = [
+        "בדיקת שלדה, זרועות ומנועים",
+        "פרופלורים - בדיקת סדקים ואיזון",
+        "סוללה - בדיקת מתח תאים וחיבורים",
+        "קליטת GPS - לפחות 10 לוויינים",
+        "וידוא VLOS (קשר עין ישיר)",
+        "בדיקת NOTAM ואזורים אסורים (AIP)"
     ]
-    completed = [st.sidebar.checkbox(step) for step in steps]
+    for check in safety_checks:
+        st.sidebar.checkbox(check)
+
+    # חלק 1: חוקה ותקנות
+    st.header("⚖️ חוקה ותקנות (מרחקי הפרדה)")
+    reg_data = get_regulation_data("מרחקי הפרדה")
     
-    if all(completed):
-        st.sidebar.success("Ready for Takeoff! 🚀")
-    else:
-        st.sidebar.warning("השלם רשימת תיוג")
-
-    # פריסה ראשית
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.header("📋 תכנון ובטיחות")
-        target = st.selectbox("סביבת ההטסה:", 
-                             ["אדם בודד / מבנה / רכב", "התקהלות בני אדם (מעל 30 איש)", "שדה תעופה אזרחי"])
-        dist = calculate_safety_distance(target)
-        st.info(f"מרחק הפרדה נדרש: **{dist} מטרים**")
-        
-        st.subheader("🔋 נתוני מתח (סוללה)")
-        s_count = st.number_input("מספר תאים (S):", 1, 12, 6)
-        st.write(f"מתח נומינלי: **{s_count * 3.7:.1f}V** | אחסון: **{s_count * 3.8:.1f}V**")
-
-    with col2:
-        st.header("🌡️ חישובי ביצועים")
-        mtow = st.number_input("משקל המראה יצרן (ק\"ג):", value=20.0)
-        temp = st.slider("טמפרטורה (°C):", 0, 50, 25)
-        safe_weight = calculate_drone_performance(mtow, temp)
-        
-        loss_pct = ((mtow - safe_weight) / mtow) * 100
-        st.metric("משקל המראה בטוח מומלץ", f"{safe_weight} ק\"ג", f"-{loss_pct:.1f}%")
-
-    st.markdown("---")
-    st.header("🛠️ מערכת אבחון תקלות")
-    issue = st.selectbox("זהית תקלה? בחר סימפטום:", ["-- בחר --"] + list(troubleshoot_drone("").split("\n"))) # תיקון קל לדינמיות
-    # לשיפור ה-Selectbox נשתמש ברשימה קשיחה:
-    issue = st.selectbox("בחר סימפטום לניתוח:", 
-                        ["-- בחר --", "רעידות חריגות", "סטייה מהנתיב (Drift)", "התחממות סוללה", "רעש שריקה מהמנועים", "ניתוקי וידאו"])
+    cols = st.columns(len(reg_data))
+    for i, (key, value) in enumerate(reg_data.items()):
+        cols[i].metric(label=key, value=value)
     
-    if issue != "-- בחר --":
-        st.error(f"**המלצת המערכת:** {troubleshoot_drone(issue)}")
+    st.warning("אי שמירה על מרחק של 250 מטר מהתקהלות היא עבירה על תקנות המטיס!")
+
+    st.divider()
+
+    # חלק 2: מטאורולוגיה וביצועים
+    st.header("🌤️ מטאורולוגיה וביצועי כלי טיס")
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        base_weight = st.number_input("משקל המראה מקסימלי יצרן (MTOW) בק\"ג:", value=20.0, step=0.5)
+        temp_input = st.slider("טמפרטורה חיצונית (°C):", 0, 50, 25)
+    
+    with c2:
+        safe_wt, loss_pct = calculate_density_altitude_impact(temp_input, base_weight)
+        st.metric("משקל המראה בטוח מומלץ", f"{safe_wt} ק\"ג", f"-{loss_pct}% ביצועים")
+        st.info("רום צפיפות גבוה (אוויר חם) מפחית את העילוי ומחייב הפחתת משקל.")
+
+    st.divider()
+
+    # חלק 3: מערכת אבחון תקלות (טכני)
+    st.header("🛠️ דיאגנוסטיקה ותחזוקה")
+    issue = st.selectbox("זהית תקלה או התנהגות חריגה?", 
+                        ["-- בחר סימפטום --", "רעידות חריגות", "סטייה מהנתיב (Drift)", 
+                         "נפילת מתח חריגה בעומס", "איבוד קשר (Failsafe)"])
+    
+    if issue == "נפילת מתח חריגה בעומס":
+        st.error("אבחנה: תא פגום בסוללה או התנגדות פנימית גבוהה. חובה לנחות מיד!")
+    elif issue == "רעידות חריגות":
+        st.error("אבחנה: בעיה באיזון פרופלורים או מנוע רופף. סכנת כשל מבני.")
+    elif issue == "סטייה מהנתיב (Drift)":
+        st.error("אבחנה: שגיאת מצפן (Compass) או הפרעה אלקטרומגנטית. עבור למצב ATTI.")
+    elif issue == "איבוד קשר (Failsafe)":
+        st.success("פעולה: וודא גובה RTH מוגדר מעל מכשולים. הכלי יבצע חזרה הביתה או נחיתה.")
 
 if __name__ == "__main__":
     main()
